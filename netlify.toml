@@ -1,0 +1,6 @@
+# Netlify config — Sundorbon KPI Tracker (static single-page app)
+# No build step and no functions: the app talks to the EOD Google Apps
+# Script directly via JSONP, so a plain static publish is all that's needed.
+
+[build]
+  publish = "."

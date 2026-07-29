@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Sundorbon — KPI Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#C9B96A; --gold-dim:#A18E4C; --green:#22372E; --green-mid:#2D4A3A; --green-dark:#1A2E22;
+    --border:rgba(201,185,106,.28); --border-soft:rgba(201,185,106,.16);
+    --text:#F5F0E0; --muted:#7A9080; --red:#D94040; --amber:#C8882A; --green-acc:#5AC880;
+    --serif:'Libre Baskerville',Georgia,serif; --sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0; background:var(--green); color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.45; min-height:100vh;}
+  .num{font-variant-numeric:tabular-nums; letter-spacing:-.01em;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 16px 80px;}
+  a{color:var(--gold);}
+
+  /* Header */
+  .header{background:var(--green-dark); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100;}
+  .header .in{max-width:1180px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+  .logo{display:flex; flex-direction:column; line-height:1.1;}
+  .logo b{font-family:var(--serif); font-size:19px; color:var(--gold); font-weight:700; letter-spacing:.04em;}
+  .logo span{color:var(--gold-dim); font-family:var(--serif); font-size:9px; letter-spacing:.2em; text-transform:uppercase; opacity:.7; margin-top:3px;}
+  .siteswitch{display:inline-flex; gap:4px; background:rgba(0,0,0,.18); border:1px solid var(--border-soft); padding:4px; border-radius:6px;}
+  .siteswitch button{background:transparent; border:none; color:var(--muted); font-family:var(--serif); font-weight:400; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:7px 13px; border-radius:4px; cursor:pointer; white-space:nowrap;}
+  .siteswitch button:hover{color:var(--text);}
+  .siteswitch button.active{background:var(--gold); color:var(--green); font-weight:700;}
+  .weeknav{display:flex; align-items:center; gap:8px;}
+  .weeknav button{background:transparent; border:1px solid var(--border); color:var(--gold-dim); width:32px; height:32px; border-radius:4px; cursor:pointer; font-size:15px;}
+  .weeknav button:hover{color:var(--gold); border-color:var(--gold-dim);}
+  .weeknav .wk{font-family:var(--serif); font-size:12px; text-align:center; min-width:130px; color:var(--text);}
+  .weeknav .wk small{display:block; font-size:10px; color:var(--muted); letter-spacing:.06em; margin-top:2px;}
+
+  /* Tabs */
+  .tabs{display:flex; gap:6px; padding:18px 0 2px; flex-wrap:wrap;}
+  .tab{border:1px solid var(--border); background:transparent; color:var(--muted); font-family:var(--serif); font-weight:400; font-size:11px; letter-spacing:.14em; text-transform:uppercase; padding:9px 18px; border-radius:4px; cursor:pointer;}
+  .tab:hover{color:var(--text);}
+  .tab.active{background:var(--gold); color:var(--green); font-weight:700; border-color:var(--gold);}
+  .view{display:none;} .view.active{display:block;}
+
+  /* Section titles */
+  .stitle{font-family:var(--serif); font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); margin:26px 2px 12px; padding-bottom:7px; border-bottom:1px solid var(--border); font-weight:700; display:flex; justify-content:space-between; align-items:baseline; gap:12px;}
+  .stitle .hint{font-family:var(--sans); font-size:11px; letter-spacing:.02em; text-transform:none; color:var(--muted); font-weight:400;}
+
+  /* Cards */
+  .card{background:var(--green-mid); border:1px solid var(--border); border-radius:8px; padding:16px 18px; border-left:3px solid var(--gold-dim);}
+  .pgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  @media (max-width:940px){ .pgrid{grid-template-columns:1fr;} }
+  .pcard .ph{display:flex; align-items:center; gap:9px; padding-bottom:10px; margin-bottom:6px; border-bottom:1px solid var(--border-soft);}
+  .pcard .swatch{width:11px; height:11px; border-radius:3px;}
+  .pcard .pname{font-family:var(--serif); font-weight:700; font-size:15px;}
+  .field{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-soft);}
+  .field:last-child{border-bottom:none;}
+  .field label{font-size:12px; color:var(--muted);}
+  input, textarea, select{font-family:var(--sans); color:var(--text); background:var(--green); border:1px solid var(--border); border-radius:5px; outline:none;}
+  input:focus, textarea:focus{border-color:var(--gold-dim);}
+  .field input{width:96px; text-align:right; font-variant-numeric:tabular-nums; padding:7px 9px; font-size:13px;}
+  .field .sfx{color:var(--muted); font-size:11px; width:26px; display:inline-block;}
+  .derived{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; background:var(--green-dark); border-radius:7px; padding:10px 12px;}
+  .derived .d .k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  .derived .d .v{font-size:15px; font-weight:600; margin-top:2px; color:var(--gold);}
+
+  /* EOD trading grid */
+  .eodgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px 20px;}
+  @media (max-width:760px){ .eodgrid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:480px){ .eodgrid{grid-template-columns:1fr;} }
+  .ef{display:flex; flex-direction:column; gap:4px;}
+  .ef label{font-size:11px; color:var(--muted); letter-spacing:.03em;}
+  .ef input, .ef textarea{padding:9px 11px; font-size:13px; font-variant-numeric:tabular-nums;}
+  .ef.full{grid-column:1/-1;}
+  .ef textarea{min-height:54px; resize:vertical; font-variant-numeric:normal;}
+
+  /* Revenue grid */
+  table.rev{width:100%; border-collapse:collapse;}
+  table.rev th, table.rev td{padding:9px 10px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px solid var(--border-soft); font-size:13px;}
+  table.rev th{font-family:var(--serif); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-dim); font-weight:700;}
+  table.rev th:first-child, table.rev td:first-child{text-align:left;}
+  table.rev td.day{color:var(--muted); font-size:12px;}
+  table.rev input{width:100px; text-align:right; padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums;}
+  table.rev tfoot td{font-weight:700; color:var(--gold); border-top:2px solid var(--border); border-bottom:none; padding-top:11px;}
+  .rev-note{font-size:12px; color:var(--muted); margin:10px 2px 0;}
+  .rev-note b{color:var(--text);}
+
+  /* KPI scorecard */
+  table.kpi{width:100%; border-collapse:collapse;}
+  table.kpi th, table.kpi td{padding:11px 12px; border-bottom:1px solid var(--border-soft); font-size:13px; text-align:right; font-variant-numeric:tabular-nums;}
+  table.kpi th{font-family:var(--serif); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-dim); font-weight:700;}
+  table.kpi th:first-child, table.kpi td:first-child{text-align:left;}
+  table.kpi td.kname{font-weight:500; color:var(--text);}
+  table.kpi td.kname small{display:block; font-size:10px; color:var(--muted); font-weight:400; letter-spacing:.03em;}
+  table.kpi input{width:82px; text-align:right; padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums;}
+  table.kpi .autoval{color:var(--gold); font-weight:600;}
+  .rag{display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:3px; font-family:var(--serif);}
+  .rag.green{background:rgba(90,200,128,.16); color:var(--green-acc); border:1px solid rgba(90,200,128,.4);}
+  .rag.amber{background:rgba(200,136,42,.16); color:var(--amber); border:1px solid rgba(200,136,42,.4);}
+  .rag.red{background:rgba(217,64,64,.15); color:var(--red); border:1px solid rgba(217,64,64,.4);}
+  .rag.none{background:rgba(122,144,128,.14); color:var(--muted); border:1px solid var(--border-soft);}
+
+  /* KPI hero stats */
+  .kstats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;}
+  @media (max-width:900px){ .kstats{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:480px){ .kstats{grid-template-columns:1fr;} }
+  .kstat{background:var(--green-mid); border:1px solid var(--border); border-radius:8px; padding:15px 16px; border-left:3px solid var(--gold-dim);}
+  .kstat .k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;}
+  .kstat .v{font-size:24px; font-weight:600; color:var(--gold); margin-top:5px; font-family:var(--serif);}
+  .kstat .wow{font-size:11px; margin-top:5px; display:inline-block;}
+  .up{color:var(--green-acc);} .down{color:var(--red);} .flat{color:var(--muted);}
+
+  /* Bonus panel */
+  .bonus{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:760px){ .bonus{grid-template-columns:1fr;} }
+  .bonus .b-el{font-family:var(--serif); font-size:15px; font-weight:700; margin-top:4px;}
+  .b-el.ok{color:var(--green-acc);} .b-el.no{color:var(--red);}
+  .b-reasons{font-size:12px; color:var(--muted); margin-top:8px;}
+  .b-reasons li{margin:3px 0;}
+
+  /* Buttons + report */
+  .btn{font-family:var(--serif); font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; padding:11px 18px; border-radius:5px; cursor:pointer; border:1px solid var(--border);}
+  .btn.gold{background:var(--gold); color:var(--green); border-color:var(--gold);}
+  .btn.gold:hover{opacity:.9;}
+  .btn.ghost{background:transparent; color:var(--gold-dim);}
+  .btn.ghost:hover{color:var(--gold); border-color:var(--gold-dim);}
+  .btn.sm{padding:6px 12px; font-size:10px;}
+  .reportbar{display:flex; gap:10px; flex-wrap:wrap; margin:6px 2px 0;}
+  pre.report{background:var(--green-dark); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:18px; overflow:auto; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; line-height:1.6; white-space:pre-wrap; margin:12px 2px 0;}
+
+  /* EOD sync panel */
+  .eodsync{margin-top:14px;}
+  .eodsync-head{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .eodsync-head .lbl{font-family:var(--serif); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold-dim);}
+  .eodsync-body{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px;}
+  @media (max-width:700px){ .eodsync-body{grid-template-columns:1fr 1fr;} }
+  .eodsync-body .es{background:var(--green-dark); border-radius:7px; padding:9px 11px;}
+  .eodsync-body .es .k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
+  .eodsync-body .es .v{font-size:16px; font-weight:600; margin-top:3px; color:var(--gold);}
+  .eodsync-empty{font-size:12px; color:var(--muted); margin-top:10px;}
+
+  footer{margin:28px 2px 0; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-family:var(--serif); letter-spacing:.04em;}
+  footer button{border:none; background:none; color:var(--gold-dim); text-decoration:underline; cursor:pointer; font:inherit;}
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--gold); color:var(--green); padding:11px 18px; border-radius:6px; font-weight:700; font-family:var(--serif); font-size:12px; letter-spacing:.06em; opacity:0; pointer-events:none; transition:.25s; z-index:400;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="in">
+    <div class="logo"><b>The Sundorbon</b><span>M95 Kitchens Group · KPI Tracker</span></div>
+    <div class="siteswitch" id="siteSwitch" role="tablist" aria-label="Venue"></div>
+    <div class="weeknav">
+      <button id="prevWk" aria-label="Previous week">‹</button>
+      <div class="wk"><span id="wkMain"></span><small><span id="wkTag"></span></small></div>
+      <button id="nextWk" aria-label="Next week">›</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="tracker">Weekly Tracker</button>
+    <button class="tab" data-tab="revenue">Revenue</button>
+    <button class="tab" data-tab="dash">KPI Dashboard</button>
+  </div>
+
+  <!-- ============ TRACKER ============ -->
+  <section class="view active" id="view-tracker">
+    <div class="stitle">Delivery platforms <span class="hint">Weekly figures — auto-saves &amp; feeds the dashboard</span></div>
+    <div class="pgrid" id="platformCards"></div>
+    <div class="card eodsync" id="eodSync"></div>
+    <div class="stitle">EOD / Trading summary <span class="hint">Weekly roll-up for Mash</span></div>
+    <div class="card"><div class="eodgrid" id="eodGrid"></div></div>
+  </section>
+
+  <!-- ============ REVENUE ============ -->
+  <section class="view" id="view-revenue">
+    <div class="stitle">Daily &amp; weekly revenue <span class="hint" id="revComposition"></span></div>
+    <div class="card">
+      <div style="display:flex; justify-content:flex-end; margin-bottom:6px;">
+        <button class="btn ghost sm" id="pullRevBtn" type="button">↻ Pull Orderlord from EOD</button>
+      </div>
+      <div style="overflow-x:auto;"><table class="rev" id="revTable"></table></div>
+      <div class="rev-note" id="revNote"></div>
+    </div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view" id="view-dash">
+    <div class="stitle">Headline <span class="hint" id="dashWeek"></span></div>
+    <div class="kstats" id="heroStats"></div>
+
+    <div class="stitle">MSA KPI scorecard <span class="hint">Clause 5 &amp; Schedule M-1 · targets editable pending calibration</span></div>
+    <div class="card" style="padding:6px 12px;"><div style="overflow-x:auto;"><table class="kpi" id="kpiTable"></table></div></div>
+
+    <div class="stitle">Weekly bonus (clause 11.3) <span class="hint">Group revenue benchmark £65,000/wk avg</span></div>
+    <div class="bonus" id="bonusPanel"></div>
+
+    <div class="stitle">Delivery platform detail</div>
+    <div class="card" style="padding:6px 12px;"><div style="overflow-x:auto;"><table class="kpi" id="platTable"></table></div></div>
+
+    <div class="stitle">Weekly report for Mash <span class="hint">All KPIs + revenue + EOD</span></div>
+    <div class="reportbar">
+      <button class="btn gold" id="genReport" type="button">Build report</button>
+      <button class="btn ghost" id="copyReport" type="button">Copy</button>
+      <button class="btn ghost" id="emailReport" type="button">Email to Mash</button>
+    </div>
+    <pre class="report" id="reportOut" style="display:none;"></pre>
+  </section>
+
+  <footer>
+    <span id="savedNote">Auto-saves on this device</span>
+    <button id="resetWk" type="button">Clear this week (this venue)</button>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ================= Config ================= */
+const SITES = [
+  { key:"bridport",   name:"Sundorbon Bridport",   short:"Bridport",   tevalis:true  },
+  { key:"dorchester", name:"Sundorbon Dorchester", short:"Dorchester", tevalis:false },
+  { key:"rivaaz",     name:"Rivaaz Lymington",     short:"Rivaaz",     tevalis:true  }
+];
+const PLATFORMS = [
+  { key:"justeat",   name:"Just Eat",  color:"#FF8000", comm:14 },
+  { key:"ubereats",  name:"Uber Eats", color:"#06C167", comm:30 },
+  { key:"deliveroo", name:"Deliveroo", color:"#00CCBC", comm:28 }
+];
+const PFIELDS = [
+  ["orders","Orders","",1],["sales","Gross sales","£",0.01],["rating","Rating","★",0.01],
+  ["reviews","Total reviews","",1],["newReviews","New reviews","",1],
+  ["promoSpend","Promo spend","£",0.01],["promoRev","Promo revenue","£",0.01],
+  ["commission","Commission","%",0.1],["refunds","Refunds","£",0.01],["rank","Area rank","#",1]
+];
+const EODFIELDS = [
+  ["totalSales","Total sales","£"],["cash","Cash","£"],["card","Card","£"],
+  ["delivery","Delivery sales","£"],["collection","Collection sales","£"],["dinein","Dine-in sales","£"],
+  ["covers","Orders / covers",""],["foodCostPct","Food cost %","%"],["labourPct","Labour cost %","%"]
+];
+/* MSA KPIs — clause 5 + Schedule M-1. auto = derived; else manual. dir = better direction. */
+const MSA_KPIS = [
+  { key:"revenue",      name:"Weekly revenue",              unit:"£",   dir:"up",   auto:"revenue", src:"Tevalis / Orderlord" },
+  { key:"ebitda",       name:"EBITDA",                      unit:"£",   dir:"up",   src:"DEXT / book-keeping" },
+  { key:"labour",       name:"Labour cost %",               unit:"%",   dir:"down", auto:"labour",  src:"Payroll / EOD" },
+  { key:"foodCost",     name:"Food cost %",                 unit:"%",   dir:"down", auto:"foodcost",src:"DEXT / stock" },
+  { key:"foodWaste",    name:"Food waste",                  unit:"£",   dir:"down", src:"Stock / wastage" },
+  { key:"refundCost",   name:"Refund cost",                 unit:"£",   dir:"down", auto:"refunds", src:"EOD refund log" },
+  { key:"serviceScore", name:"Service reviews (Primary KPI)",unit:"★",  dir:"up",   src:"Review platforms" },
+  { key:"custReviews",  name:"Customer reviews (blended)",  unit:"★",   dir:"up",   auto:"rating",  src:"Delivery platforms" },
+  { key:"deliveryTime", name:"Avg delivery time",           unit:"min", dir:"down", src:"Orderlord" },
+  { key:"lateOrders",   name:"Late orders",                 unit:"",    dir:"down", src:"Orderlord / EOD" },
+  { key:"missingItems", name:"Missing items",               unit:"",    dir:"down", src:"EOD" },
+  { key:"purchasing",   name:"Purchasing price index",      unit:"",    dir:"down", src:"Supplier monitoring" },
+  { key:"stockAccuracy",name:"Stock accuracy %",            unit:"%",   dir:"up",   src:"Stock take" }
+];
+const BONUS_REVENUE = 65000;            // clause 11.2 combined weekly benchmark
+const STORE_KEY = "m95-kpi-tracker-v2";
+const OLD_KEYS = ["dorchester-kpi-tracker-v1"];
+const SEED = { dorchester: { justeat: { rating:"5.00", reviews:"129" } } };
+const SEED_WEEK = "2026-07-27";
+
+/* Starter KPI targets (industry benchmarks) — applied only where a target is blank,
+   so anything you edit is kept. Placeholders pending Schedule M-1 calibration. */
+const TARGET_DEFAULTS = {
+  _shared:    { foodCost:30, serviceScore:4.5, custReviews:4.5, deliveryTime:35, lateOrders:5, missingItems:3, purchasing:100, stockAccuracy:98 },
+  bridport:   { revenue:16000, ebitda:1900, labour:30, foodWaste:150, refundCost:100 },
+  dorchester: { revenue:14000, ebitda:1700, labour:25, foodWaste:100, refundCost:150 },
+  rivaaz:     { revenue:14000, ebitda:1700, labour:30, foodWaste:150, refundCost:100 }
+};
+const EOD_WEBHOOK = "https://script.google.com/macros/s/AKfycbxU701_jb1esdZzCMir1_i8Jsyo3hEsyKwnXOgyU1XtaYPbXSCZLNWwJamzSxIbVar_/exec";
+
+/* ================= State ================= */
+let store = { sites:{} };
+let curSite = "dorchester";
+let curWeek = weekKey(new Date());
+
+function loadStore(){
+  try{ const r = localStorage.getItem(STORE_KEY); if(r) store = JSON.parse(r); }catch(e){ store = null; }
+  if(!store || typeof store !== "object") store = { sites:{} };
+  if(!store.sites) store.sites = {};
+  if(!store.sites.dorchester){                       // migrate old single-site file
+    for(const k of OLD_KEYS){
+      try{ const o = JSON.parse(localStorage.getItem(k)); if(o && o.weeks){ store.sites.dorchester = { weeks:o.weeks, targets:{} }; break; } }catch(e){}
+    }
+  }
+  SITES.forEach(s => { if(!store.sites[s.key]) store.sites[s.key] = { weeks:{}, targets:{} }; if(!store.sites[s.key].targets) store.sites[s.key].targets = {}; });
+}
+function saveStore(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+  catch(e){ document.getElementById("savedNote").textContent = "Saving unavailable here — data lasts this session only"; }
+}
+function siteObj(k){ return SITES.find(s=>s.key===k); }
+function siteName(){ const s = siteObj(curSite); return s ? s.name : curSite; }
+function hasTevalis(){ const s = siteObj(curSite); return s ? s.tevalis : false; }
+function siteWeeks(k){ if(!store.sites[k]) store.sites[k] = {weeks:{},targets:{}}; if(!store.sites[k].weeks) store.sites[k].weeks = {}; return store.sites[k].weeks; }
+function siteTargets(k){ if(!store.sites[k].targets) store.sites[k].targets = {}; return store.sites[k].targets; }
+function weekData(key){
+  const weeks = siteWeeks(curSite);
+  if(!weeks[key]){ const platforms={}; PLATFORMS.forEach(p=>platforms[p.key]={commission:p.comm}); weeks[key]={platforms, eod:{}, revenue:{daily:{}}, kpi:{}}; }
+  PLATFORMS.forEach(p => { if(!weeks[key].platforms[p.key]) weeks[key].platforms[p.key]={commission:p.comm}; });
+  if(!weeks[key].eod) weeks[key].eod = {};
+  if(!weeks[key].revenue) weeks[key].revenue = {daily:{}};
+  if(!weeks[key].revenue.daily) weeks[key].revenue.daily = {};
+  if(!weeks[key].kpi) weeks[key].kpi = {};
+  return weeks[key];
+}
+
+/* ================= Helpers ================= */
+const n = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
+const has = v => v!==undefined && v!==null && (''+v).trim()!=='' && isFinite(parseFloat(v));
+const gbp = v => "£" + (Math.round(v*100)/100).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+const gbp0 = v => "£" + Math.round(v).toLocaleString("en-GB");
+const pct = v => (Math.round(v*10)/10).toLocaleString("en-GB") + "%";
+
+function weekKey(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day); return x.toISOString().slice(0,10); }
+function shiftWeek(key,dw){ const d=new Date(key+"T00:00:00"); d.setDate(d.getDate()+dw*7); return weekKey(d); }
+function weekDates(key){ const out=[]; const b=new Date(key+"T00:00:00"); for(let i=0;i<7;i++){ const d=new Date(b); d.setDate(d.getDate()+i); out.push(d.toISOString().slice(0,10)); } return out; }
+function fmtWeekMain(key){ return new Date(key+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"}); }
+function fmtWeekFull(key){ const s=new Date(key+"T00:00:00"); const e=new Date(s); e.setDate(e.getDate()+6); const o={day:"2-digit",month:"short"}; return s.toLocaleDateString("en-GB",o)+" – "+e.toLocaleDateString("en-GB",{...o,year:"numeric"}); }
+function fmtDay(iso){ const d=new Date(iso+"T00:00:00"); return d.toLocaleDateString("en-GB",{weekday:"short", day:"2-digit", month:"short"}); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function isThisWeek(key){ return key===weekKey(new Date()); }
+
+function platDerived(pd){
+  const sales=n(pd.sales), orders=n(pd.orders), comm=n(pd.commission), promoS=n(pd.promoSpend), promoR=n(pd.promoRev), refunds=n(pd.refunds);
+  const aov=orders>0?sales/orders:0, commAmt=sales*comm/100, net=sales-commAmt-promoS, roas=promoS>0?promoR/promoS:0;
+  return { sales, orders, aov, commAmt, net, roas, promoS, promoR, refunds };
+}
+function weekTotals(key){
+  const wd=weekData(key); let t={orders:0,sales:0,commAmt:0,promoS:0,promoR:0,net:0,refunds:0,newReviews:0};
+  PLATFORMS.forEach(p=>{ const d=platDerived(wd.platforms[p.key]||{}); t.orders+=d.orders; t.sales+=d.sales; t.commAmt+=d.commAmt; t.promoS+=d.promoS; t.promoR+=d.promoR; t.net+=d.net; t.refunds+=d.refunds; t.newReviews+=n((wd.platforms[p.key]||{}).newReviews); });
+  t.aov=t.orders>0?t.sales/t.orders:0; t.roas=t.promoS>0?t.promoR/t.promoS:0; return t;
+}
+function blendedRating(key){
+  const wd=weekData(key); let sum=0,c=0;
+  PLATFORMS.forEach(p=>{ const r=n((wd.platforms[p.key]||{}).rating); if(r>0){sum+=r;c++;} });
+  return c>0?sum/c:0;
+}
+function revenueTotals(key){
+  const wd=weekData(key); let ol=0,tev=0; const daily=wd.revenue.daily||{};
+  weekDates(key).forEach(dt=>{ const r=daily[dt]||{}; ol+=n(r.ol); tev+=n(r.tev); });
+  return { ol, tev, total: ol + (hasTevalis()? tev:0) };
+}
+function groupWeekRevenue(key){
+  const prev=curSite; let total=0;
+  SITES.forEach(s=>{ curSite=s.key; total+=revenueTotals(key).total; });
+  curSite=prev; return total;
+}
+
+/* KPI auto-derived values */
+function kpiAuto(which,key){
+  const wd=weekData(key);
+  if(which==="revenue")  return revenueTotals(key).total;
+  if(which==="labour")   return n(wd.eod.labourPct);
+  if(which==="foodcost") return n(wd.eod.foodCostPct);
+  if(which==="refunds")  return weekTotals(key).refunds;
+  if(which==="rating")   return blendedRating(key);
+  return 0;
+}
+function kpiValue(k,key){
+  const cfg=MSA_KPIS.find(x=>x.key===k);
+  if(cfg && cfg.auto) return kpiAuto(cfg.auto,key);
+  const v=(weekData(key).kpi||{})[k];
+  return has(v)? n(v):null;
+}
+function ragClass(value,target,dir){
+  if(value===null || value===undefined || !has(target)) return "none";
+  const t=n(target);
+  if(dir==="up")   return value>=t ? "green" : (value>=t*0.85 ? "amber" : "red");
+  return value<=t ? "green" : (value<=t*1.15 ? "amber" : "red");   // down
+}
+
+/* ================= EOD sync (JSONP) ================= */
+function pullEodWeek(weekKeyISO){
+  return new Promise(resolve=>{
+    const cb="eodcb_"+Date.now()+"_"+Math.floor(Math.random()*1000); let done=false;
+    const s=document.createElement("script");
+    function cleanup(){ try{delete window[cb];}catch(e){window[cb]=undefined;} if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=d=>{ done=true; resolve(d); cleanup(); };
+    s.onerror=()=>{ if(!done){resolve(null); cleanup();} };
+    setTimeout(()=>{ if(!done){resolve(null); cleanup();} },9000);
+    s.src=EOD_WEBHOOK+"?action=getWeekSummary&site="+encodeURIComponent(curSite)+"&weekStart="+encodeURIComponent(weekKeyISO)+"&callback="+cb;
+    document.body.appendChild(s);
+  });
+}
+async function syncEod(manual){
+  const res=await pullEodWeek(curWeek); const wd=weekData(curWeek);
+  if(res && !res.error && typeof res.turnover!=="undefined"){
+    wd.eodPull={ turnover:n(res.turnover), orders:n(res.orders), days:n(res.days), daily:res.daily||[], at:new Date().toISOString() };
+    // non-destructive fill of the revenue OL column
+    if(Array.isArray(res.daily)){
+      res.daily.forEach(d=>{ if(d && d.turnover>0){ if(!wd.revenue.daily[d.date]) wd.revenue.daily[d.date]={}; const cur=wd.revenue.daily[d.date].ol; if(!has(cur)) wd.revenue.daily[d.date].ol=String(d.turnover); } });
+    }
+    saveStore();
+    if(manual) toast("Pulled "+gbp0(n(res.turnover))+" from EOD");
+  } else if(manual){ toast(res && res.error ? "EOD error — redeploy script?" : "No EOD data / not reachable"); }
+  renderEodSync(); renderRevenue(); renderDash();
+}
+function renderEodSync(){
+  const box=document.getElementById("eodSync"); const wd=weekData(curWeek); const p=wd.eodPull;
+  const entered=PLATFORMS.reduce((t,pl)=>t+platDerived(wd.platforms[pl.key]).sales,0);
+  let inner='<div class="eodsync-head"><span class="lbl">Combined delivery turnover · pulled from EOD app</span><button class="btn ghost sm" id="eodRefresh" type="button">↻ Refresh</button></div>';
+  if(p){
+    const v=entered-p.turnover, vc=Math.abs(v)<1?"flat":(v>0?"up":"down");
+    inner+='<div class="eodsync-body">'+
+      '<div class="es"><div class="k">EOD turnover ('+p.days+'d)</div><div class="v num">'+gbp(p.turnover)+'</div></div>'+
+      '<div class="es"><div class="k">EOD orders</div><div class="v num">'+p.orders.toLocaleString("en-GB")+'</div></div>'+
+      '<div class="es"><div class="k">Platform total (entered)</div><div class="v num">'+gbp(entered)+'</div></div>'+
+      '<div class="es"><div class="k">Variance</div><div class="v num '+vc+'">'+(v>=0?"+":"")+gbp0(v)+'</div></div></div>';
+  } else { inner+='<div class="eodsync-empty">Not synced yet — hit Refresh. (Needs the updated Apps Script deployed.)</div>'; }
+  box.innerHTML=inner;
+  const rb=document.getElementById("eodRefresh"); if(rb) rb.onclick=()=>syncEod(true);
+}
+
+/* ================= Renders ================= */
+function renderSiteSwitch(){
+  document.getElementById("siteSwitch").innerHTML = SITES.map(s=>'<button role="tab" data-site="'+s.key+'" class="'+(s.key===curSite?"active":"")+'">'+s.short+'</button>').join("");
+}
+function renderWeekNav(){
+  document.getElementById("wkMain").textContent = fmtWeekMain(curWeek)+(isThisWeek(curWeek)?" (this wk)":"");
+  document.getElementById("wkTag").textContent = fmtWeekFull(curWeek);
+  document.getElementById("dashWeek").textContent = siteName()+" · w/c "+fmtWeekFull(curWeek);
+}
+function derivedHtml(d){
+  return '<div class="d"><div class="k">AOV</div><div class="v num">'+gbp(d.aov)+'</div></div>'+
+    '<div class="d"><div class="k">Promo ROAS</div><div class="v num">'+(d.roas?d.roas.toFixed(1)+"×":"—")+'</div></div>'+
+    '<div class="d"><div class="k">Commission £</div><div class="v num">'+gbp(d.commAmt)+'</div></div>'+
+    '<div class="d"><div class="k">Net (after fees)</div><div class="v num">'+gbp(d.net)+'</div></div>';
+}
+function renderTracker(){
+  const wd=weekData(curWeek); const box=document.getElementById("platformCards"); box.innerHTML="";
+  PLATFORMS.forEach(p=>{
+    const pd=wd.platforms[p.key]; const d=platDerived(pd);
+    let fields="";
+    PFIELDS.forEach(([fk,label,sfx,step])=>{ const val=(pd[fk]==null)?"":pd[fk];
+      fields+='<div class="field"><label>'+label+'</label><div><input type="number" step="'+step+'" min="0" data-p="'+p.key+'" data-f="'+fk+'" value="'+val+'" inputmode="decimal"><span class="sfx">'+(sfx||"")+'</span></div></div>'; });
+    const card=document.createElement("div"); card.className="card pcard";
+    card.innerHTML='<div class="ph"><span class="swatch" style="background:'+p.color+'"></span><span class="pname">'+p.name+'</span></div>'+fields+'<div class="derived">'+derivedHtml(d)+'</div>';
+    box.appendChild(card);
+  });
+  const eg=document.getElementById("eodGrid"); eg.innerHTML="";
+  EODFIELDS.forEach(([fk,label,sfx])=>{ const val=(wd.eod[fk]==null)?"":wd.eod[fk];
+    const div=document.createElement("div"); div.className="ef";
+    div.innerHTML='<label>'+label+(sfx&&sfx!=="%"?" ("+sfx+")":"")+'</label><input type="number" step="0.01" min="0" data-eod="'+fk+'" value="'+val+'" inputmode="decimal">'; eg.appendChild(div); });
+  const notes=document.createElement("div"); notes.className="ef full";
+  notes.innerHTML='<label>Notes for Mash</label><textarea data-eod="notes" placeholder="Anything worth flagging this week…">'+(wd.eod.notes||"")+'</textarea>'; eg.appendChild(notes);
+}
+function renderRevenue(){
+  const wd=weekData(curWeek); const tev=hasTevalis();
+  document.getElementById("revComposition").textContent = tev ? "Bridport / Rivaaz = Orderlord + Tevalis" : "Dorchester = Orderlord only";
+  const dates=weekDates(curWeek); let rows="", ol=0, tv=0;
+  dates.forEach(dt=>{ const r=wd.revenue.daily[dt]||{}; const o=n(r.ol), t=n(r.tev); ol+=o; tv+=t; const tot=o+(tev?t:0);
+    rows+='<tr><td class="day">'+fmtDay(dt)+'</td>'+
+      '<td><input type="number" step="0.01" min="0" data-rev="'+dt+'" data-rf="ol" value="'+(r.ol==null?"":r.ol)+'" inputmode="decimal"></td>'+
+      (tev?'<td><input type="number" step="0.01" min="0" data-rev="'+dt+'" data-rf="tev" value="'+(r.tev==null?"":r.tev)+'" inputmode="decimal"></td>':'')+
+      '<td class="num">'+(tot?gbp(tot):"—")+'</td></tr>';
+  });
+  const head='<thead><tr><th>Day</th><th>Orderlord £</th>'+(tev?'<th>Tevalis £</th>':'')+'<th>Total £</th></tr></thead>';
+  const foot='<tfoot><tr><td>Week</td><td class="num">'+gbp(ol)+'</td>'+(tev?'<td class="num">'+gbp(tv)+'</td>':'')+'<td class="num">'+gbp(ol+(tev?tv:0))+'</td></tr></tfoot>';
+  document.getElementById("revTable").innerHTML=head+'<tbody>'+rows+'</tbody>'+foot;
+  document.getElementById("revNote").innerHTML = tev
+    ? 'Weekly revenue <b>'+gbp(ol+tv)+'</b> = Orderlord '+gbp(ol)+' + Tevalis '+gbp(tv)+'. Orderlord auto-fills from the EOD app; enter Tevalis from your Takings Check screenshot.'
+    : 'Weekly revenue <b>'+gbp(ol)+'</b> = Orderlord only. Auto-fills from the EOD app.';
+}
+function renderDash(){
+  const t=weekTotals(curWeek), tp=weekTotals(shiftWeek(curWeek,-1));
+  const rev=revenueTotals(curWeek), revP=revenueTotals(shiftWeek(curWeek,-1));
+  // hero
+  document.getElementById("heroStats").innerHTML=
+    stat("Weekly revenue", gbp0(rev.total), wow(rev.total,revP.total))+
+    stat("Delivery orders", t.orders.toLocaleString("en-GB"), wow(t.orders,tp.orders))+
+    stat("Blended rating", blendedRating(curWeek)?blendedRating(curWeek).toFixed(2)+"★":"—", "")+
+    stat("Promo ROAS", t.roas?t.roas.toFixed(1)+"×":"—", wow(t.roas,tp.roas));
+  // MSA scorecard
+  const tg=siteTargets(curSite); let krows="";
+  MSA_KPIS.forEach(k=>{
+    const v=kpiValue(k.key,curWeek);
+    const valCell = k.auto
+      ? '<span class="autoval num">'+(v===null?"—":fmtKpi(v,k.unit))+'</span>'
+      : '<input type="number" step="0.01" data-kpi="'+k.key+'" value="'+((weekData(curWeek).kpi[k.key]==null)?"":weekData(curWeek).kpi[k.key])+'" inputmode="decimal">';
+    const rc=ragClass(v, tg[k.key], k.dir);
+    const ragLbl={green:"On target",amber:"Watch",red:"Off target",none:"Set target"}[rc];
+    krows+='<tr><td class="kname">'+k.name+'<small>'+k.src+' · '+(k.dir==="up"?"higher better":"lower better")+'</small></td>'+
+      '<td>'+valCell+'</td>'+
+      '<td><input type="number" step="0.01" data-target="'+k.key+'" value="'+(tg[k.key]==null?"":tg[k.key])+'" inputmode="decimal" placeholder="—"></td>'+
+      '<td><span class="rag '+rc+'">'+ragLbl+'</span></td></tr>';
+  });
+  document.getElementById("kpiTable").innerHTML=
+    '<thead><tr><th>KPI</th><th>This week</th><th>Target</th><th>Status</th></tr></thead><tbody>'+krows+'</tbody>';
+  // bonus
+  renderBonus();
+  // platform detail
+  const wd=weekData(curWeek); let prows="";
+  PLATFORMS.forEach(p=>{ const pd=wd.platforms[p.key]; const d=platDerived(pd);
+    prows+='<tr><td class="kname"><span class="rag none" style="background:'+p.color+'22;border-color:'+p.color+'66;color:'+p.color+'">'+p.name+'</span></td>'+
+      '<td class="num">'+d.orders.toLocaleString("en-GB")+'</td><td class="num">'+gbp0(d.sales)+'</td><td class="num">'+gbp(d.aov)+'</td>'+
+      '<td class="num">'+(n(pd.rating)?n(pd.rating).toFixed(2)+"★":"—")+'</td>'+
+      '<td class="num">'+(n(pd.reviews)||"—")+(n(pd.newReviews)?' (+'+n(pd.newReviews)+')':'')+'</td>'+
+      '<td class="num">'+(d.roas?d.roas.toFixed(1)+"×":"—")+'</td><td class="num">'+gbp0(d.net)+'</td></tr>'; });
+  document.getElementById("platTable").innerHTML=
+    '<thead><tr><th>Platform</th><th>Orders</th><th>Sales</th><th>AOV</th><th>Rating</th><th>Reviews</th><th>ROAS</th><th>Net</th></tr></thead>'+
+    '<tbody>'+prows+'</tbody>'+
+    '<tfoot><tr><td>Total</td><td class="num">'+t.orders+'</td><td class="num">'+gbp0(t.sales)+'</td><td class="num">'+gbp(t.aov)+'</td><td>—</td><td class="num">+'+t.newReviews+'</td><td class="num">'+(t.roas?t.roas.toFixed(1)+"×":"—")+'</td><td class="num">'+gbp0(t.net)+'</td></tr></tfoot>';
+}
+function fmtKpi(v,unit){ if(unit==="£") return gbp(v); if(unit==="%") return pct(v); if(unit==="★") return v.toFixed(2)+"★"; return (Math.round(v*10)/10).toLocaleString("en-GB"); }
+function stat(k,v,w){ return '<div class="kstat"><div class="k">'+k+'</div><div class="v num">'+v+'</div>'+(w?'<div class="wow '+w.c+'">'+w.t+'</div>':'')+'</div>'; }
+function wow(cur,prev){ if(prev===0&&cur===0) return {c:"flat",t:"—"}; if(prev===0) return {c:"up",t:"▲ new"}; const ch=(cur-prev)/Math.abs(prev)*100; const c=ch>0.5?"up":(ch<-0.5?"down":"flat"); return {c, t:(c==="up"?"▲ ":c==="down"?"▼ ":"— ")+Math.abs(ch).toFixed(0)+"%"}; }
+
+function bonusReasons(){
+  const tg=siteTargets(curSite), reasons=[];
+  const lab=kpiValue("labour",curWeek), fw=kpiValue("foodWaste",curWeek), rf=kpiValue("refundCost",curWeek), rev=kpiValue("custReviews",curWeek), late=kpiValue("lateOrders",curWeek);
+  if(lab!==null && has(tg.labour) && lab>n(tg.labour)) reasons.push("Labour "+pct(lab)+" over target "+pct(n(tg.labour)));
+  if(fw!==null && has(tg.foodWaste) && fw>n(tg.foodWaste)) reasons.push("Food waste "+gbp(fw)+" over target");
+  if(rf!==null && has(tg.refundCost) && rf>n(tg.refundCost)) reasons.push("Refund cost "+gbp(rf)+" over target");
+  if(rev!==null && has(tg.custReviews) && rev<n(tg.custReviews)) reasons.push("Reviews "+rev.toFixed(2)+"★ under bad-review threshold");
+  if(late!==null && has(tg.lateOrders) && late>n(tg.lateOrders)) reasons.push("Late orders "+late+" over target");
+  return reasons;
+}
+function renderBonus(){
+  const gRev=groupWeekRevenue(curWeek); const reasons=bonusReasons(); const eligible=reasons.length===0;
+  const revClass=gRev>=BONUS_REVENUE?"up":"flat";
+  document.getElementById("bonusPanel").innerHTML=
+    '<div class="card"><div class="kstat" style="border:none;padding:0;background:none">'+
+      '<div class="k">Group combined weekly revenue</div>'+
+      '<div class="v num '+revClass+'">'+gbp0(gRev)+'</div>'+
+      '<div class="wow flat">Benchmark '+gbp0(BONUS_REVENUE)+'/wk (6-month avg, cl 11.2)</div></div></div>'+
+    '<div class="card"><div class="k" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">This week bonus eligibility — '+siteObj(curSite).short+'</div>'+
+      '<div class="b-el '+(eligible?"ok":"no")+'">'+(eligible?"Eligible ✓":"Blocked ✕")+'</div>'+
+      (reasons.length?'<ul class="b-reasons">'+reasons.map(r=>'<li>• '+r+'</li>').join("")+'</ul>':'<div class="b-reasons">No clause 11.3 breaches recorded. Set KPI targets for full checking.</div>')+'</div>';
+}
+
+/* ================= Report ================= */
+function buildReport(){
+  const t=weekTotals(curWeek), tp=weekTotals(shiftWeek(curWeek,-1)); const wd=weekData(curWeek); const eod=wd.eod; const rev=revenueTotals(curWeek); const tg=siteTargets(curSite);
+  const wowStr=(c,p,f)=>{ const cur=f(c); if(p===0) return cur; const ch=((c-p)/Math.abs(p)*100); return cur+" ("+(ch>=0?"+":"")+ch.toFixed(0)+"% WoW)"; };
+  let L=[];
+  L.push(siteName().toUpperCase()+" — WEEKLY KPI REPORT");
+  L.push("Week commencing: "+fmtWeekFull(curWeek));
+  L.push("Prepared by Samantha Benn · delivered per MSA clause 6");
+  L.push("");
+  L.push("── REVENUE ──");
+  if(hasTevalis()) L.push("Weekly revenue: "+gbp(rev.total)+"  (Orderlord "+gbp(rev.ol)+" + Tevalis "+gbp(rev.tev)+")");
+  else L.push("Weekly revenue (Orderlord): "+gbp(rev.ol));
+  if(wd.eodPull) L.push("EOD combined turnover (auto): "+gbp(wd.eodPull.turnover)+" over "+wd.eodPull.days+" day(s), "+wd.eodPull.orders+" orders");
+  L.push("");
+  L.push("── MSA KPI SCORECARD (cl 5 / Sch M-1) ──");
+  MSA_KPIS.forEach(k=>{ const v=kpiValue(k.key,curWeek); const rc=ragClass(v,tg[k.key],k.dir);
+    const stat={green:"ON TARGET",amber:"WATCH",red:"OFF TARGET",none:"—"}[rc];
+    L.push(k.name+": "+(v===null?"—":fmtKpi(v,k.unit))+(has(tg[k.key])?" (target "+fmtKpi(n(tg[k.key]),k.unit)+")":"")+" ["+stat+"]"); });
+  L.push("");
+  L.push("── WEEKLY BONUS (cl 11.3) ──");
+  const reasons=bonusReasons();
+  L.push("Group combined weekly revenue: "+gbp(groupWeekRevenue(curWeek))+" (benchmark "+gbp0(BONUS_REVENUE)+"/wk)");
+  L.push("Eligibility ("+siteObj(curSite).short+"): "+(reasons.length?"BLOCKED — "+reasons.join("; "):"Eligible, no breaches"));
+  L.push("");
+  L.push("── DELIVERY PLATFORMS ──");
+  PLATFORMS.forEach(p=>{ const pd=wd.platforms[p.key]; const d=platDerived(pd);
+    L.push(p.name+" — "+d.orders+" orders · "+gbp(d.sales)+" · AOV "+gbp(d.aov)+" · "+(n(pd.rating)?n(pd.rating).toFixed(2)+"★":"—")+" ("+(n(pd.reviews)||0)+" rev, +"+(n(pd.newReviews)||0)+") · Promo "+gbp(d.promoS)+"→"+gbp(d.promoR)+(d.roas?" ("+d.roas.toFixed(1)+"×)":"")+" · Net "+gbp(d.net)); });
+  L.push("Totals: "+wowStr(t.orders,tp.orders,x=>x+" orders")+" · "+wowStr(t.sales,tp.sales,gbp)+" · Net "+gbp(t.net));
+  L.push("");
+  L.push("── EOD / TRADING SUMMARY ──");
+  const anyEod=EODFIELDS.some(([fk])=>n(eod[fk]))||eod.notes;
+  if(anyEod){
+    L.push("Total sales: "+(n(eod.totalSales)?gbp(n(eod.totalSales)):"—")+" · Cash "+gbp(n(eod.cash))+" · Card "+gbp(n(eod.card)));
+    L.push("Delivery "+gbp(n(eod.delivery))+" · Collection "+gbp(n(eod.collection))+" · Dine-in "+gbp(n(eod.dinein)));
+    L.push("Covers "+(n(eod.covers)||"—")+" · Food cost "+(n(eod.foodCostPct)?pct(n(eod.foodCostPct)):"—")+" · Labour "+(n(eod.labourPct)?pct(n(eod.labourPct)):"—"));
+    if(eod.notes){ L.push(""); L.push("Notes: "+eod.notes); }
+  } else L.push("(No EOD figures entered)");
+  return L.join("\n");
+}
+
+/* ================= Events ================= */
+document.addEventListener("input", e=>{
+  const p=e.target.getAttribute("data-p"), eodF=e.target.getAttribute("data-eod"),
+        rev=e.target.getAttribute("data-rev"), kpiF=e.target.getAttribute("data-kpi"), tgt=e.target.getAttribute("data-target");
+  const wd=weekData(curWeek);
+  if(p){ wd.platforms[p][e.target.getAttribute("data-f")]=e.target.value; saveStore(); refreshDerived(p); refreshHeroLite(); }
+  else if(eodF){ wd.eod[eodF]=e.target.value; saveStore(); }
+  else if(rev){ const rf=e.target.getAttribute("data-rf"); if(!wd.revenue.daily[rev]) wd.revenue.daily[rev]={}; wd.revenue.daily[rev][rf]=e.target.value; saveStore(); updateRevTotals(); }
+  else if(kpiF){ wd.kpi[kpiF]=e.target.value; saveStore(); }
+  else if(tgt){ siteTargets(curSite)[tgt]=e.target.value; saveStore(); }
+});
+function refreshDerived(pkey){
+  const wd=weekData(curWeek); const idx=PLATFORMS.findIndex(x=>x.key===pkey);
+  const cards=document.querySelectorAll("#platformCards .pcard"); const der=cards[idx]&&cards[idx].querySelector(".derived");
+  if(der) der.innerHTML=derivedHtml(platDerived(wd.platforms[pkey]));
+}
+function refreshHeroLite(){ /* light: refresh dashboard if visible */ if(document.getElementById("view-dash").classList.contains("active")) renderDash(); }
+function updateRevTotals(){ renderRevenue(); if(document.getElementById("view-dash").classList.contains("active")) renderDash(); }
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    tab.classList.add("active"); document.getElementById("view-"+tab.getAttribute("data-tab")).classList.add("active");
+    if(tab.getAttribute("data-tab")==="dash") renderDash();
+    if(tab.getAttribute("data-tab")==="revenue") renderRevenue();
+  });
+});
+document.getElementById("siteSwitch").addEventListener("click",e=>{
+  const b=e.target.closest("[data-site]"); if(!b) return; const sk=b.getAttribute("data-site"); if(sk===curSite) return;
+  curSite=sk; document.getElementById("reportOut").style.display="none"; renderAll(); syncEod(false);
+});
+document.getElementById("prevWk").onclick=()=>{ curWeek=shiftWeek(curWeek,-1); renderAll(); syncEod(false); };
+document.getElementById("nextWk").onclick=()=>{ curWeek=shiftWeek(curWeek,1); renderAll(); syncEod(false); };
+document.getElementById("pullRevBtn").onclick=()=>syncEod(true);
+document.getElementById("genReport").onclick=()=>{ const o=document.getElementById("reportOut"); o.textContent=buildReport(); o.style.display="block"; };
+document.getElementById("copyReport").onclick=async()=>{ const o=document.getElementById("reportOut"); const txt=o.textContent||buildReport(); o.textContent=txt; o.style.display="block"; try{ await navigator.clipboard.writeText(txt); toast("Report copied"); }catch(e){ toast("Select text to copy"); } };
+document.getElementById("emailReport").onclick=()=>{ const o=document.getElementById("reportOut"); const txt=o.textContent||buildReport(); o.textContent=txt; o.style.display="block";
+  const subject=siteName()+" Weekly KPIs — w/c "+fmtWeekFull(curWeek);
+  window.location.href="mailto:hello@m95restaurants.com?cc=management@m95restaurants.com&subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(txt); };
+document.getElementById("resetWk").onclick=()=>{ if(confirm("Clear all data for "+siteObj(curSite).short+" — "+fmtWeekFull(curWeek)+"? This can't be undone.")){ delete siteWeeks(curSite)[curWeek]; saveStore(); renderAll(); syncEod(false); } };
+
+function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600); }
+
+/* ================= Init ================= */
+function applySeed(){
+  Object.keys(SEED).forEach(sk=>{ const weeks=siteWeeks(sk); if(weeks[SEED_WEEK]) return; const prev=curSite; curSite=sk; const wd=weekData(SEED_WEEK);
+    Object.keys(SEED[sk]).forEach(pk=>{ if(wd.platforms[pk]) Object.assign(wd.platforms[pk],SEED[sk][pk]); }); curSite=prev; });
+  saveStore();
+}
+function applyDefaultTargets(){
+  SITES.forEach(s=>{
+    const tg=siteTargets(s.key);
+    const defaults=Object.assign({}, TARGET_DEFAULTS._shared, TARGET_DEFAULTS[s.key]||{});
+    Object.keys(defaults).forEach(k=>{ if(!has(tg[k])) tg[k]=defaults[k]; });
+  });
+  saveStore();
+}
+function renderAll(){ renderSiteSwitch(); renderWeekNav(); renderTracker(); renderRevenue(); renderEodSync(); renderDash(); }
+loadStore(); applySeed(); applyDefaultTargets(); renderAll(); syncEod(false);
+</script>
+</body>
+</html>
