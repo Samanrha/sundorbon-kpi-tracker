@@ -392,7 +392,7 @@ function pullEodWeek(weekKeyISO){
 async function syncEod(manual){
   const res=await pullEodWeek(curWeek); const wd=weekData(curWeek);
   if(res && !res.error && typeof res.turnover!=="undefined"){
-    wd.eodPull={ turnover:n(res.turnover), orders:n(res.orders), days:n(res.days), daily:res.daily||[], at:new Date().toISOString() };
+    wd.eodPull={ turnover:n(res.turnover), orders:n(res.orders), days:n(res.days), takings:n(res.takings), daily:res.daily||[], at:new Date().toISOString() };
     // non-destructive fill of the revenue OL column
     if(Array.isArray(res.daily)){
       res.daily.forEach(d=>{ if(d && d.turnover>0){ if(!wd.revenue.daily[d.date]) wd.revenue.daily[d.date]={}; const cur=wd.revenue.daily[d.date].ol; if(!has(cur)) wd.revenue.daily[d.date].ol=String(d.turnover); } });
@@ -409,10 +409,10 @@ function renderEodSync(){
   if(p){
     const v=entered-p.turnover, vc=Math.abs(v)<1?"flat":(v>0?"up":"down");
     inner+='<div class="eodsync-body">'+
-      '<div class="es"><div class="k">EOD turnover ('+p.days+'d)</div><div class="v num">'+gbp(p.turnover)+'</div></div>'+
+      '<div class="es"><div class="k">Orderlord turnover ('+p.days+'d)</div><div class="v num">'+gbp(p.turnover)+'</div></div>'+
+      '<div class="es"><div class="k">Takings (cash+card)</div><div class="v num">'+gbp(n(p.takings))+'</div></div>'+
       '<div class="es"><div class="k">EOD orders</div><div class="v num">'+p.orders.toLocaleString("en-GB")+'</div></div>'+
-      '<div class="es"><div class="k">Platform total (entered)</div><div class="v num">'+gbp(entered)+'</div></div>'+
-      '<div class="es"><div class="k">Variance</div><div class="v num '+vc+'">'+(v>=0?"+":"")+gbp0(v)+'</div></div></div>';
+      '<div class="es"><div class="k">OL vs takings</div><div class="v num '+(Math.abs(p.turnover-n(p.takings))<1?"flat":"down")+'">'+((p.turnover-n(p.takings))>=0?"+":"")+gbp0(p.turnover-n(p.takings))+'</div></div></div>';
   } else { inner+='<div class="eodsync-empty">Not synced yet — hit Refresh. (Needs the updated Apps Script deployed.)</div>'; }
   box.innerHTML=inner;
   const rb=document.getElementById("eodRefresh"); if(rb) rb.onclick=()=>syncEod(true);
@@ -547,7 +547,7 @@ function buildReport(){
   L.push("── REVENUE ──");
   if(hasTevalis()) L.push("Weekly revenue: "+gbp(rev.total)+"  (Orderlord "+gbp(rev.ol)+" + Tevalis "+gbp(rev.tev)+")");
   else L.push("Weekly revenue (Orderlord): "+gbp(rev.ol));
-  if(wd.eodPull) L.push("EOD combined turnover (auto): "+gbp(wd.eodPull.turnover)+" over "+wd.eodPull.days+" day(s), "+wd.eodPull.orders+" orders");
+  if(wd.eodPull) L.push("EOD combined turnover (auto): "+gbp(wd.eodPull.turnover)+" over "+wd.eodPull.days+" day(s), "+wd.eodPull.orders+" orders · takings "+gbp(n(wd.eodPull.takings)));
   L.push("");
   L.push("── MSA KPI SCORECARD (cl 5 / Sch M-1) ──");
   MSA_KPIS.forEach(k=>{ const v=kpiValue(k.key,curWeek); const rc=ragClass(v,tg[k.key],k.dir);
