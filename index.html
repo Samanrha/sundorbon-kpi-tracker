@@ -274,6 +274,8 @@ const TARGET_DEFAULTS = {
   rivaaz:     { revenue:14000, ebitda:1700, labour:30, foodWaste:150, refundCost:100 }
 };
 const EOD_WEBHOOK = "https://script.google.com/macros/s/AKfycbxU701_jb1esdZzCMir1_i8Jsyo3hEsyKwnXOgyU1XtaYPbXSCZLNWwJamzSxIbVar_/exec";
+/* Hours & Wage tracker web app (confirm this matches CONFIG.WEBHOOK_URL in the hours index.html) */
+const WAGES_WEBHOOK = "https://script.google.com/macros/s/AKfycbxUNIQZQR-8srJUeZ7xIni5u3f17m3VX1r6zPJIeoUFUz7HyteS-lmAlfzwVhMsfafd/exec";
 
 /* ================= State ================= */
 let store = { sites:{} };
@@ -357,7 +359,7 @@ function groupWeekRevenue(key){
 function kpiAuto(which,key){
   const wd=weekData(key);
   if(which==="revenue")  return revenueTotals(key).total;
-  if(which==="labour")   return n(wd.eod.labourPct);
+  if(which==="labour"){ const rev=revenueTotals(key).total; const wp=wd.wagePull; if(wp && rev>0) return wp.total/rev*100; return n(wd.eod.labourPct); }
   if(which==="foodcost") return n(wd.eod.foodCostPct);
   if(which==="refunds")  return weekTotals(key).refunds;
   if(which==="rating")   return blendedRating(key);
@@ -400,7 +402,29 @@ async function syncEod(manual){
     saveStore();
     if(manual) toast("Pulled "+gbp0(n(res.turnover))+" from EOD");
   } else if(manual){ toast(res && res.error ? "EOD error — redeploy script?" : "No EOD data / not reachable"); }
+  syncWages(false);
   renderEodSync(); renderRevenue(); renderDash();
+}
+function pullWages(weekKeyISO){
+  return new Promise(resolve=>{
+    const cb="wgcb_"+Date.now()+"_"+Math.floor(Math.random()*1000); let done=false;
+    const s=document.createElement("script");
+    function cleanup(){ try{delete window[cb];}catch(e){window[cb]=undefined;} if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=d=>{ done=true; resolve(d); cleanup(); };
+    s.onerror=()=>{ if(!done){resolve(null); cleanup();} };
+    setTimeout(()=>{ if(!done){resolve(null); cleanup();} },9000);
+    s.src=WAGES_WEBHOOK+"?action=weekwages&site="+encodeURIComponent(curSite)+"&start="+encodeURIComponent(weekKeyISO)+"&callback="+cb;
+    document.body.appendChild(s);
+  });
+}
+async function syncWages(manual){
+  const res=await pullWages(curWeek); const wd=weekData(curWeek);
+  if(res && res.ok!==false && typeof res.wageTotal!=="undefined"){
+    wd.wagePull={ total:n(res.wageTotal), staff:n(res.staff), chefs:n(res.chefs), drivers:n(res.drivers), entries:n(res.entries), at:new Date().toISOString() };
+    saveStore();
+    if(manual) toast("Pulled wages "+gbp0(n(res.wageTotal)));
+  } else if(manual){ toast("No wage data / not reachable — redeploy hours script?"); }
+  renderEodSync(); renderDash();
 }
 function renderEodSync(){
   const box=document.getElementById("eodSync"); const wd=weekData(curWeek); const p=wd.eodPull;
@@ -408,9 +432,13 @@ function renderEodSync(){
   let inner='<div class="eodsync-head"><span class="lbl">Combined delivery turnover · pulled from EOD app</span><button class="btn ghost sm" id="eodRefresh" type="button">↻ Refresh</button></div>';
   if(p){
     const v=entered-p.turnover, vc=Math.abs(v)<1?"flat":(v>0?"up":"down");
+    const wp=wd.wagePull; const rev=revenueTotals(curWeek).total;
+    const lab = (wp && rev>0) ? (wp.total/rev*100) : null;
     inner+='<div class="eodsync-body">'+
       '<div class="es"><div class="k">Orderlord turnover ('+p.days+'d)</div><div class="v num">'+gbp(p.turnover)+'</div></div>'+
       '<div class="es"><div class="k">Takings (cash+card)</div><div class="v num">'+gbp(n(p.takings))+'</div></div>'+
+      '<div class="es"><div class="k">Wage cost</div><div class="v num">'+(wp?gbp(wp.total):"—")+'</div></div>'+
+      '<div class="es"><div class="k">Labour % (wage÷rev)</div><div class="v num">'+(lab!==null?pct(lab):"—")+'</div></div>'+
       '<div class="es"><div class="k">EOD orders</div><div class="v num">'+p.orders.toLocaleString("en-GB")+'</div></div>'+
       '<div class="es"><div class="k">OL vs takings</div><div class="v num '+(Math.abs(p.turnover-n(p.takings))<1?"flat":"down")+'">'+((p.turnover-n(p.takings))>=0?"+":"")+gbp0(p.turnover-n(p.takings))+'</div></div></div>';
   } else { inner+='<div class="eodsync-empty">Not synced yet — hit Refresh. (Needs the updated Apps Script deployed.)</div>'; }
@@ -548,6 +576,7 @@ function buildReport(){
   if(hasTevalis()) L.push("Weekly revenue: "+gbp(rev.total)+"  (Orderlord "+gbp(rev.ol)+" + Tevalis "+gbp(rev.tev)+")");
   else L.push("Weekly revenue (Orderlord): "+gbp(rev.ol));
   if(wd.eodPull) L.push("EOD combined turnover (auto): "+gbp(wd.eodPull.turnover)+" over "+wd.eodPull.days+" day(s), "+wd.eodPull.orders+" orders · takings "+gbp(n(wd.eodPull.takings)));
+  if(wd.wagePull){ const lab=rev.total>0?(wd.wagePull.total/rev.total*100):null; L.push("Wage cost (auto): "+gbp(wd.wagePull.total)+"  (staff "+gbp(wd.wagePull.staff)+" · chefs "+gbp(wd.wagePull.chefs)+" · drivers "+gbp(wd.wagePull.drivers)+")"+(lab!==null?" · Labour "+pct(lab):"")); }
   L.push("");
   L.push("── MSA KPI SCORECARD (cl 5 / Sch M-1) ──");
   MSA_KPIS.forEach(k=>{ const v=kpiValue(k.key,curWeek); const rc=ragClass(v,tg[k.key],k.dir);
